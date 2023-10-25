@@ -14,7 +14,7 @@ signal shift_rrx :  std_logic;
 signal shift_val :  std_logic_vector(4 downto 0);
 
 signal din :  std_logic_vector(31 downto 0);
-signal cin :  std_logic;
+signal cin :  std_logic := '0';
 
 signal dout :  std_logic_vector(31 downto 0);
 signal cout :  std_logic;
@@ -46,14 +46,14 @@ port map (
 
 process
 begin
-din <= "10001000100010001000100010001000";
-shift_val <= "00001", "00000" after 500 ns;
-shift_lsl <= '1';
+din <= "10001000100010001000100010001011";
+shift_val <= "00100", "00010" after 200 ns ,"00000" after 500 ns;
+shift_lsl <= '0';
  shift_lsr <= '0';
  shift_asr <= '0';
  shift_ror <= '0';
- shift_rrx <= '0';
- cin <= '0';
+ shift_rrx <= '1';
+ cin <=  not cin after 50 ns;
 wait;
 end process;
 end architecture;
