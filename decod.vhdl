@@ -495,22 +495,57 @@ begin
 								if_ir(7 downto 4) = "1001" else '0';
 	swap_t <= '1' when	if_ir(27 downto 23) = "00010" and
 								if_ir(11 downto 4) = "00001001" else '0';
-	....
+    branch_t <= '1' when if_ir(27 downto 25) = "101" 
+                                else '0';
+    trans_t <= '1' when if_ir(27 downto 26) = "01"
+                                else '0';
+    mtrans_t <= '1'when if_ir(27 downto 25) = "100" 
+                                else '0';
 
 -- decod regop opcode
 
 	and_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = X"0" else '0';
-	....
+    eor_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0001" else '0';
+    sub_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0010" else '0';
+    rsb_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0011" else '0';
+    add_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0100" else '0';
+    adc_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0101" else '0';
+    sbc_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0110" else '0';
+    rsc_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "0111" else '0';
+    tst_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1000" else '0';
+    teq_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1001" else '0';
+    cmp_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1010" else '0';
+    cmn_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1011" else '0';
+    orr_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1100" else '0';
+    mov_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1101" else '0';
+    bic_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1110" else '0';
+    mvn_i <= '1' when regop_t = '1' and if_ir(24 downto 21) = "1111" else '0';
+
 -- mult instruction
+
+mul_i <= '1' when mult_t = '1' and if_ir(21) = '0';
+mla_i <= '1' when mult_t = '1' and if_ir(21) = '1';
 
 -- trans instruction
 
+ldr_i  <= '1' when trans_t = '1' and if_ir(22) = '0' and if_ir(20) = '1';
+str_i  <= '1' when trans_t = '1' and if_ir(22) = '0' and if_ir(20) = '0';
+ldrb_i <= '1' when trans_t = '1' and if_ir(22) = '1' and if_ir(20) = '1';
+strb_i <= '1' when trans_t = '1' and if_ir(22) = '1' and if_ir(20) = '0';
+
 -- mtrans instruction
+
+ldm_i <= '1' when mtrans_t = '1' and if_ir(20) = '1';
+stm_i <= '1' when mtrans_t = '1' and if_ir(20) = '0';
 
 -- branch instruction
 
+b_i  <= '1' when branch_t = '1' and if_ir(24) = '0';
+bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
+
+
 -- Decode interface operands
-	op1 <=	reg_pc		when branch_t = '1'					else
+	op1 <=	reg_pc  when branch_t = '1'				else
 				....
 				rdata1;
 
@@ -519,33 +554,43 @@ begin
 	op2	<=  ....
 				rdata2;
 
-	alu_dest <=	 ..... else
+	alu_dest <=	 if_ir(15 downto 12) when regop_t = '1' or trans_t = '1' else
 					if_ir(19 downto 16);
 
-	alu_wb	<= '1'			when	
+	alu_wb	<= '1' when  (trans_t = '1' or mtrans_t = '1') and if_ir(21) = '1'	else
 					'0';
 
-	flag_wb	<= 
+	flag_wb	<= '1' when  (regop_t = '1' or mult_t = '1') and if_ir(20) = '1' else
+                    '0';
+
 
 -- reg read
-	radr1 <= 
+	radr1 <= if_ir(19 downto 16) when regop_t = '1' else --Rn
+        if_ir(15 downto 12) when mult_t = '1' else
+            if_ir(19 downto 16) when trans_t = '1' else 
+                if_ir(19 downto 16) when mtrans_t = '1' else '0';
 				
-	radr2 <=
+	radr2 <= if_ir(3 downto 0) when regop_t = '1' and if_ir(25) = '0' else --Rm
+        if_ir(3 downto 0) when mult_t = '1' else
+            if_ir(3 downto 0) when trans_t = '1' and if_ir(25) = '1' else '0';
 
-	radr3 <=
+	radr3 <= if_ir(11 downto 8) when regop_t = '1' and if_ir(25) = '0' and if_ir(4) = '1' else --Rs
+        if_ir(11 downto 8) when mult_t = '1' else
+            if_ir(11 downto 8) when and if_ir(25) = '1' and if_ir(4) = '1'  trans_t = '1' else '0';
+
 
 -- Reg Invalid
 
-	inval_exe_adr <= ...... else
+	inval_exe_adr <= if_ir(19 downto 16) when mult_t = '1' else
 							if_ir(15 downto 12);
 
-	inval_exe <=	'1'	when	....
+	inval_exe <= '1' when	....
 						'0';
 
 	inval_mem_adr <=	....
 							mtrans_rd;
 
-	inval_mem <=	'1'	when		....		else
+	inval_mem <= '1' when		....		else
 						'0';
 
 	inval_czn <=
@@ -555,39 +600,49 @@ begin
 
 -- operand validite
 
-	operv <=	'1' when  ...
-				'0';
+	operv <= '1' when  branch_t = '0' else
+				'0'; --??? TODO
 
 -- Decode to mem interface 
-	ld_dest <= 
-	pre_index <=
 
-	mem_lw <= 
+    --TODO transferts multiples (store??)
+
+	ld_dest <= if_ir(15 downto 12) when trans_t = '1 else X"0";
+	pre_index <= if_ir(24); 
+
+	mem_lw <= ldr_i;
 	mem_lb <= ldrb_i;
-	mem_sw <= 
+	mem_sw <= str_i;
 	mem_sb <= strb_i;
 
 -- Shifter command
 
-	shift_lsl <=
+	shift_lsl <= '1' when if_ir(6 downto 5) = "00" and (regop_t = '1' or trans_t = '1') else '0';
+	shift_lsr <= '1' when if_ir(6 downto 5) = "01" and (regop_t = '1' or trans_t = '1') else '0';
+	shift_asr <= '1' when if_ir(6 downto 5) = "10" and (regop_t = '1' or trans_t = '1') else '0';
+	shift_ror <= '1' when if_ir(6 downto 5) = "11" and (regop_t = '1' or trans_t = '1') and (not (if_ir(11 downto 7) = X"0")) else '0';
+	shift_rrx <= '1' when if_ir(6 downto 5) = "11" and (regop_t = '1' or trans_t = '1') and if_ir(11 downto 7) = X"0" else '0';
 
-	shift_lsr <=
-	shift_asr <= 
-	shift_ror <=
-	shift_rrx <=
-
-	shift_val <=	"00010"							when branch_t = '1'							else
+    shift_val <= "00010" when branch_t = '1' else
+        if_ir(11 downto 7) when if_ir(4) = '0' and ((if_ir(25) = '0' and regop_t = '1') or (if_ir(25) = '1' and trans_t = '1') ) else 
+            '0'&if_ir(11 downto 8) when if_ir(4) = '1' and ((if_ir(25) = '0' and regop_t = '1') or (if_ir(25) = '1' and trans_t = '1') ) else
+                X"0";
 
 -- Alu operand selection
-	comp_op1	<= '1' when rsb_i = '1' or 
-	comp_op2	<=	'1' when sub_i = '1' or 
+	comp_op1 <= '1' when rsb_i = '1' or  rsc_i = '1' else '0';
+	comp_op2 <=	'1' when sub_i = '1' or sbc_i = '1' or cmp_i = '1' else '0';
 
-	alu_cy <=	'1'				when sub_i = '1' or
+	alu_cy <=	'1'	when sub_i = '1' or cmp_i = '1' or rsb_i = '1' or else '0'; --??? TODO rsb Cin=0? et +c = cout de l'alu -> bizarre  
 
 -- Alu command
 
-	alu_cmd <=	"11" when ...  else
-					"00";
+	alu_cmd <=	"11" when eor_i = '1' or  teq_i = '1' else
+                    "01" when and_i = '1' or tst_i = '1' or bic_i = '1' else
+                        "10" when orr_i = '1' else
+					        "00";
+
+    -- TODO : positionnement des flags TST TEQ...?
+
 -- Mtrans reg list
 
 	process (ck)
