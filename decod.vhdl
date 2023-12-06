@@ -69,7 +69,7 @@ entity Decod is
 			mem_res			: in Std_Logic_Vector(31 downto 0);
 			mem_dest			: in Std_Logic_Vector(3 downto 0);
 			mem_wb			: in Std_Logic;
-			
+
 	-- global interface
 			ck					: in Std_Logic;
 			reset_n			: in Std_Logic;
@@ -99,7 +99,7 @@ component reg
 		wneg			: in Std_Logic;
 		wovr			: in Std_Logic;
 		cspr_wb		: in Std_Logic;
-		
+
 	-- Read Port 1 32 bits
 		reg_rd1		: out Std_Logic_Vector(31 downto 0);
 		radr1			: in Std_Logic_Vector(3 downto 0);
@@ -122,8 +122,8 @@ component reg
 		reg_cznv		: out Std_Logic;
 		reg_ovr		: out Std_Logic;
 		reg_vv		: out Std_Logic;
-		
-	-- Invalidate Port 
+
+	-- Invalidate Port
 		inval_adr1	: in Std_Logic_Vector(3 downto 0);
 		inval1		: in Std_Logic;
 
@@ -137,7 +137,7 @@ component reg
 		reg_pc		: out Std_Logic_Vector(31 downto 0);
 		reg_pcv		: out Std_Logic;
 		inc_pc		: in Std_Logic;
-	
+
 	-- global interface
 		ck				: in Std_Logic;
 		reset_n		: in Std_Logic;
@@ -323,7 +323,7 @@ signal cy			: Std_Logic;
 -- Alu operand selection
 signal comp_op1	: Std_Logic;
 signal comp_op2	: Std_Logic;
-signal alu_cy 		: Std_Logic;
+signal alu_cyalu_cy 		: Std_Logic;
 
 -- Alu command
 signal alu_cmd		: Std_Logic_Vector(1 downto 0);
@@ -424,50 +424,50 @@ begin
 	port map(	wdata1		=> exe_res,
 					wadr1			=> exe_dest,
 					wen1			=> exe_wb,
-                                          
+
 					wdata2		=> mem_res,
 					wadr2			=> mem_dest,
 					wen2			=> mem_wb,
-                                          
+
 					wcry			=> exe_c,
 					wzero			=> exe_z,
 					wneg			=> exe_n,
 					wovr			=> exe_v,
 					cspr_wb		=> exe_flag_wb,
-					               
+
 					reg_rd1		=> rdata1,
 					radr1			=> radr1,
 					reg_v1		=> rvalid1,
-                                          
+
 					reg_rd2		=> rdata2,
 					radr2			=> radr2,
 					reg_v2		=> rvalid2,
-                                          
+
 					reg_rd3		=> rdata3,
 					radr3			=> radr3,
 					reg_v3		=> rvalid3,
-                                          
+
 					reg_cry		=> cry,
 					reg_zero		=> zero,
 					reg_neg		=> neg,
 					reg_ovr		=> ovr,
-					               
+
 					reg_cznv		=> reg_cznv,
 					reg_vv		=> reg_vv,
-                                          
+
 					inval_adr1	=> inval_exe_adr,
 					inval1		=> inval_exe,
-                                          
+
 					inval_adr2	=> inval_mem_adr,
 					inval2		=> inval_mem,
-                                          
+
 					inval_czn	=> inval_czn,
 					inval_ovr	=> inval_ovr,
-                                          
+
 					reg_pc		=> reg_pc,
 					reg_pcv		=> reg_pcv,
 					inc_pc		=> inc_pc,
-				                              
+
 					ck				=> ck,
 					reset_n		=> reset_n,
 					vdd			=> vdd,
@@ -495,11 +495,11 @@ begin
 								if_ir(7 downto 4) = "1001" else '0';
 	swap_t <= '1' when	if_ir(27 downto 23) = "00010" and
 								if_ir(11 downto 4) = "00001001" else '0';
-    branch_t <= '1' when if_ir(27 downto 25) = "101" 
+    branch_t <= '1' when if_ir(27 downto 25) = "101"
                                 else '0';
     trans_t <= '1' when if_ir(27 downto 26) = "01"
                                 else '0';
-    mtrans_t <= '1'when if_ir(27 downto 25) = "100" 
+    mtrans_t <= '1'when if_ir(27 downto 25) = "100"
                                 else '0';
 
 -- decod regop opcode
@@ -549,10 +549,12 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 				....
 				rdata1;
 
-	offset32 <=	
+	offset32 <=  X"0" & if_ir(23 downto 0) when branch_t = '1' else
+								X"0" & if_ir(11 downto 0)	when (trans_t = '1' and if_ir(25) = '1') or (regop_t = '1' and if_ir(25) = '0')
+									else X"0";-- ?
 
-	op2	<=  ....
-				rdata2;
+	op2	<=  X"0" when (regop_t = '1' and if_ir(25) = '1') or (trans_t = '1' and if_ir(25) = '0') or mtrans_t = '1' or branch_t = '0'
+				else rdata2;
 
 	alu_dest <=	 if_ir(15 downto 12) when regop_t = '1' or trans_t = '1' else
 					if_ir(19 downto 16);
@@ -567,9 +569,9 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 -- reg read
 	radr1 <= if_ir(19 downto 16) when regop_t = '1' else --Rn
         if_ir(15 downto 12) when mult_t = '1' else
-            if_ir(19 downto 16) when trans_t = '1' else 
+            if_ir(19 downto 16) when trans_t = '1' else
                 if_ir(19 downto 16) when mtrans_t = '1' else '0';
-				
+
 	radr2 <= if_ir(3 downto 0) when regop_t = '1' and if_ir(25) = '0' else --Rm
         if_ir(3 downto 0) when mult_t = '1' else
             if_ir(3 downto 0) when trans_t = '1' and if_ir(25) = '1' else '0';
@@ -594,7 +596,7 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 						'0';
 
 	inval_czn <=
-			
+
 
 	inval_ovr <=
 
@@ -603,12 +605,14 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 	operv <= '1' when  branch_t = '0' else
 				'0'; --??? TODO
 
--- Decode to mem interface 
+-- Decode to mem interface
 
     --TODO transferts multiples (store??)
 
-	ld_dest <= if_ir(15 downto 12) when trans_t = '1 else X"0";
-	pre_index <= if_ir(24); 
+	ld_dest <= if_ir(15 downto 12) when trans_t = '1 else
+                    when mtrans_t = '1' else
+                        X"0";
+	pre_index <= if_ir(24);
 
 	mem_lw <= ldr_i;
 	mem_lb <= ldrb_i;
@@ -624,7 +628,7 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 	shift_rrx <= '1' when if_ir(6 downto 5) = "11" and (regop_t = '1' or trans_t = '1') and if_ir(11 downto 7) = X"0" else '0';
 
     shift_val <= "00010" when branch_t = '1' else
-        if_ir(11 downto 7) when if_ir(4) = '0' and ((if_ir(25) = '0' and regop_t = '1') or (if_ir(25) = '1' and trans_t = '1') ) else 
+        if_ir(11 downto 7) when if_ir(4) = '0' and ((if_ir(25) = '0' and regop_t = '1') or (if_ir(25) = '1' and trans_t = '1') ) else
             '0'&if_ir(11 downto 8) when if_ir(4) = '1' and ((if_ir(25) = '0' and regop_t = '1') or (if_ir(25) = '1' and trans_t = '1') ) else
                 X"0";
 
@@ -632,16 +636,18 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 	comp_op1 <= '1' when rsb_i = '1' or  rsc_i = '1' else '0';
 	comp_op2 <=	'1' when sub_i = '1' or sbc_i = '1' or cmp_i = '1' else '0';
 
-	alu_cy <=	'1'	when sub_i = '1' or cmp_i = '1' or rsb_i = '1' or else '0'; --??? TODO rsb Cin=0? et +c = cout de l'alu -> bizarre  
-
+	alu_cy <=	'1'	when sub_i = '1' or cmp_i = '1' or rsb_i = '1' else
+                    cry when sbc_i = '1' or rsc_i = '1'
+                    	else '0'; --??? TODO rsb Cin=0? 
 -- Alu command
 
 	alu_cmd <=	"11" when eor_i = '1' or  teq_i = '1' else
                     "01" when and_i = '1' or tst_i = '1' or bic_i = '1' else
                         "10" when orr_i = '1' else
-					        "00";
+					        				"00";
 
-    -- TODO : positionnement des flags TST TEQ...?
+  -- positionnement des flags TST TEQ CMP CMN
+	exe_flag_wb <= '1' when teq_i = '1' or tst_i = '1' or cmp_i = '1' or cmn_i = '1' else '0';
 
 -- Mtrans reg list
 
@@ -725,13 +731,51 @@ begin
 		blink <= '0';
 		mtrans_shift <= '0';
 		mtrans_loop_adr <= '0';
-
-		if dec2if_full = '0' and reg_pcv = '1' then
-		....
-		end if;
-			
-
 	
+		if dec2if_full = '0' and reg_pcv = '1' then
+			next_state <= RUN;
+		else
+			dec2exe_push <= ;
+			next_state <= FETCH;
+		end if;
+
+	-- TODO sorties
+
+	when RUN =>
+
+			exe_pop <= '0';
+			
+			if dec2if_empty = '1'  and (dec2exe_full = '1' or reg_pcv = '0') then -- T1
+				dec2if <=;
+				next_state <= RUN;
+			elsif bl_i = '1' then -- T4
+				next_state <= LINK;
+			elsif branch_t = '1' then -- T5
+				next_state <= BRANCH;
+			elsif mtrans_t = '1' then -- T6 TODO: mtrans_t pas dans la liste du process?
+				next_state <= MTRANS
+			elsif reg_pcv = '0' then -- T2
+				poubelle_state <= ;
+				next_state <= RUN;
+			elsif reg_pcv = '1' then -- T3
+				??? <= op1; -- Fifo
+				??? <= op2; -- Fifo
+				next_state <= RUN;
+			end if;
+ 
+	when BRANCH =>
+		if dec2if_empty = '1' then -- T1 
+			next_state <= BRANCH;
+		else  -- T2
+			next_state <= RUN; 
+		end if;
+
+	when LINK =>
+			next_state <= BRANCH;
+
+	when MTRANS => ...
+		 
+
 	end case;
 end process;
 
