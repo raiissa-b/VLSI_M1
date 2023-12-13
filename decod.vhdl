@@ -477,13 +477,26 @@ begin
 
 	cond <= '1' when	(if_ir(31 downto 28) = X"0" and zero = '1') or
 							(if_ir(31 downto 28) = X"1" and zero = '0') or
-							....
-							(if_ir(31 downto 28) = X"E") else '0';
+							(if_ir(31 downto 28) = X"2" and cry = '1') or
+							(if_ir(31 downto 28) = X"3" and cry = '0') or
+							(if_ir(31 downto 28) = X"4" and neg = '1') or
+							(if_ir(31 downto 28) = X"5" and neg = '0') or
+							(if_ir(31 downto 28) = X"6" and ovr = '1') or
+							(if_ir(31 downto 28) = X"7" and ovr = '0') or
+							(if_ir(31 downto 28) = X"8" and cry = '1' and zero = '0') or
+							(if_ir(31 downto 28) = X"E" and cry = '0' and zero = '1') else '0';
 
 	condv <= '1'		when if_ir(31 downto 28) = X"E" else
-				reg_cznv	when (if_ir(31 downto 28) = X"0" or
-									....
-									if_ir(31 downto 28) = X"9") else
+				reg_cznv	when (	if_ir(31 downto 28) = X"0" or 
+									(if_ir(31 downto 28) = X"1") or
+									(if_ir(31 downto 28) = X"2") or
+ 									(if_ir(31 downto 28) = X"3") or
+ 									(if_ir(31 downto 28) = X"4") or
+ 									(if_ir(31 downto 28) = X"5") or
+ 									(if_ir(31 downto 28) = X"6") or
+ 									(if_ir(31 downto 28) = X"7") or
+									(if_ir(31 downto 28) = X"8") or
+									if_ir(31 downto 28) = X"9") else '0';
 
 
 
@@ -546,15 +559,15 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 
 -- Decode interface operands
 	op1 <=	reg_pc  when branch_t = '1'				else
-				....
-				rdata1;
+				--....
+				rdata1 when rvalid1 = '1' else ; 
 
 	offset32 <=  X"0" & if_ir(23 downto 0) when branch_t = '1' else
 								X"0" & if_ir(11 downto 0)	when (trans_t = '1' and if_ir(25) = '1') or (regop_t = '1' and if_ir(25) = '0')
 									else X"0";-- ?
 
 	op2	<=  X"0" when (regop_t = '1' and if_ir(25) = '1') or (trans_t = '1' and if_ir(25) = '0') or mtrans_t = '1' or branch_t = '0'
-				else rdata2;
+				else  rdata2 when rvalid2 = '1';
 
 	alu_dest <=	 if_ir(15 downto 12) when regop_t = '1' or trans_t = '1' else
 					if_ir(19 downto 16);
@@ -586,19 +599,20 @@ bl_i <= '1' when branch_t = '1' and if_ir(24) = '1';
 	inval_exe_adr <= if_ir(19 downto 16) when mult_t = '1' else
 							if_ir(15 downto 12);
 
-	inval_exe <= '1' when	....
+	inval_exe <= '1' when	branch_t = '0' or mtrans_t = '0' or trans_t = '0' else
 						'0';
 
-	inval_mem_adr <=	....
-							mtrans_rd;
+	inval_mem_adr <=	if_ir(15 downto 12) when trans_t = '1' else
+						mtrans_rd;
 
-	inval_mem <= '1' when		....		else
+	inval_mem <= '1' when	regop_t = '0' or mult_t = '0'	else
 						'0';
 
-	inval_czn <=
+	inval_czn <= if_ir(20) when regop_t = '1' or mult_t = '1' else 
+						'0';
 
-
-	inval_ovr <=
+	inval_ovr <= if_ir(20) when regop_t = '1' else 
+						'0';
 
 -- operand validite
 
